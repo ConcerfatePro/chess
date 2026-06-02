@@ -145,6 +145,11 @@
           <span class="nav-card-title">Training &amp; puzzles</span>
           <span class="nav-card-desc">Sparring bots, a move coach, and random puzzles</span>
         </button>
+        <button type="button" class="nav-card" data-nav="custom">
+          <span class="nav-card-kicker">Practice · no stakes</span>
+          <span class="nav-card-title">Custom practice</span>
+          <span class="nav-card-desc">Place any pieces, pick a bot, and play it out</span>
+        </button>
         <button type="button" class="nav-card" data-nav="lan">
           <span class="nav-card-kicker">Multiplayer</span>
           <span class="nav-card-title">Local &amp; LAN</span>
@@ -238,6 +243,53 @@
           <button type="button" id="startPuzzleBtn">🎲 Random puzzle</button>
         </div>
         <div id="puzzleList" class="training-puzzle-grid"></div>
+      </div>
+    </section>
+
+    <!-- Custom practice -->
+    <section id="screen-custom" class="screen panel-screen hidden">
+      <div class="screen-head">
+        <button type="button" class="secondary" data-back="menu">← Menu</button>
+        <h2>Custom practice</h2>
+      </div>
+      <p class="lead">Set up any position you like — place your pieces and the bot's pieces wherever you want — then pick an opponent and play it out. Nothing here affects your ELO, XP, or coins.</p>
+
+      <div class="custom-setup">
+        <div class="custom-board-side">
+          <div class="custom-palette" id="customPalette" aria-label="Piece palette"></div>
+          <div class="custom-board-wrap">
+            <div id="customBoard" class="custom-board" role="grid" aria-label="Position editor"></div>
+          </div>
+          <p class="custom-hint">Pick a piece above, then click squares to place it. Choose <strong>Erase</strong> to clear squares.</p>
+          <div class="button-row custom-board-actions">
+            <button type="button" id="customResetBtn" class="secondary">Standard position</button>
+            <button type="button" id="customClearBtn" class="secondary">Clear board</button>
+          </div>
+        </div>
+
+        <aside class="custom-options">
+          <label class="field">
+            <span>Side to move</span>
+            <select id="customTurnSelect">
+              <option value="w">White</option>
+              <option value="b">Black</option>
+            </select>
+          </label>
+          <label class="field">
+            <span>You play as</span>
+            <select id="customColorSelect">
+              <option value="w">White</option>
+              <option value="b">Black</option>
+            </select>
+          </label>
+          <label class="field">
+            <span>Opponent bot</span>
+            <select id="customBotSelect"></select>
+          </label>
+          <p id="customBotDesc" class="custom-bot-desc"></p>
+          <p id="customError" class="form-error"></p>
+          <button type="button" id="customStartBtn">Start practice</button>
+        </aside>
       </div>
     </section>
 

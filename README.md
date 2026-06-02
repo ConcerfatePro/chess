@@ -1,26 +1,8 @@
-# Cream Chess LAN Bot
+# Chess
 
-A chess-only browser game with a cozy cream/backrooms retro look. It plays full,
-legal chess, ships with a ladder of bots to beat, and lets you host a game over
-your local network so other people in the house can join. On top of the chess
-itself there's a little progression layer to keep things fun: profiles, XP,
-coins, a shop, a locker, and achievements.
-
-There are no real-money purchases anywhere. The coins and tokens only exist
-inside the game.
-
-## Features
-
-- **Local profiles** — username plus a passcode (stored as a SHA-256 hash, never plain text)
-- **Progression** — XP, leveling, coins, and Royal Tokens (all in-game only, no real money)
-- **Bot ladder** — seven opponents, from the humble Pawn Rookie all the way up to The Checkmate Engine
-- **Shop & locker** — buy and equip board and piece cosmetics
-- **Achievements** — each one pays out a reward the first time you earn it
-- **Two ways to play** — Human vs Bot (the ladder) or Human vs Human (same device or over LAN)
-- **Real chess rules** — full legal movement, castling, en passant, and promotion choices
-- **Game feedback** — check / checkmate / stalemate detection with a big end-of-game overlay
-- **Quality of life** — captured pieces, move history, and board flip
-- **Self-hostable** — a small static Node server you can run on your own machine
+Play chess in your browser against a ladder of bots, or share a link with
+someone on your wifi and play against them. You earn coins as you play and can
+spend them on cosmetics.
 
 ## Run it
 
@@ -29,40 +11,32 @@ npm install
 npm start
 ```
 
-Then open it in your browser:
+The terminal prints a link you can send to others on your network.
 
-```text
-http://localhost:3000
-```
+## What it does
 
-To let other people on your network play, share the LAN URL that gets printed in
-the terminal when the server starts. It looks something like this:
+- Play ranked matches against a ladder of bots to earn coins and XP.
+- Play another person, either on the same device or over your local network.
+- Custom practice: set up any position by placing your pieces and the bot's
+  pieces wherever you want, pick which bot to play, and practice. This does not
+  affect your ELO, coins, or level.
+- Training mode with sparring bots and puzzles, also with no stakes.
+- Spend coins in the shop on board and piece cosmetics, then equip them.
+- Track stats, match history, achievements, and a server leaderboard.
 
-```text
-http://192.168.1.25:3000
-```
+## What it's made of
 
-## Saves (the database)
+- Node.js for the server (`server.js`). No build step.
+- Plain HTML, CSS, and JavaScript on the frontend. No frameworks.
+- The chess rules and bot search are written from scratch, so it runs fully
+  offline. There is no external engine like Stockfish.
+- `better-sqlite3` for saving profiles.
 
-Profiles live in a **SQLite** database on whichever machine is running `npm start`:
+## Saves
 
-- Database file: `data/chess.db`
-- Passcodes are hashed (SHA-256 + salt). Game data is stored as JSON in the database.
-- Everyone who connects through your **LAN URL** shares the same saves — one host means one database.
-- The first time you run a newer version, any old `localStorage` profiles are migrated into the database automatically.
+Profiles are stored in a SQLite database (`data/chess.db`) on whichever machine
+runs `npm start`. Everyone who connects through the shared link uses the same
+database. Passcodes are hashed before being stored.
 
-If you just open `index.html` directly (no server), the game falls back to
-plain browser `localStorage` instead.
-
-## How progression works
-
-1. Create a profile the first time you launch.
-2. Play the **Bot Ladder** to win coins and XP. Higher tiers charge an entry fee.
-3. Spend your coins on cosmetics in the **Shop**, then equip them in the **Locker**.
-4. Want company? Share the LAN URL from the menu so others on your network can join.
-
-## Notes
-
-- Bots run right in the browser using an async search, so the page stays responsive while they think. The Node host uses `better-sqlite3` for profile storage.
-- The Checkmate Engine uses the strongest built-in search. There's no Stockfish — everything works offline.
-- The virtual currency has no real-world value and can't be bought or cashed out.
+If you open `index.html` directly without the server, the game falls back to the
+browser's `localStorage` instead.

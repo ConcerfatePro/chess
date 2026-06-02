@@ -21,6 +21,7 @@
     leaderboard: document.getElementById("screen-leaderboard"),
     botLadder: document.getElementById("screen-bot-ladder"),
     training: document.getElementById("screen-training"),
+    custom: document.getElementById("screen-custom"),
     play: document.getElementById("screen-play"),
     shop: document.getElementById("screen-shop"),
     locker: document.getElementById("screen-locker"),
@@ -54,6 +55,7 @@
     }
     if (name === "botLadder") renderBotLadder();
     if (name === "training") renderTraining();
+    if (name === "custom") renderCustom();
     if (name === "shop") renderShop();
     if (name === "locker") renderLocker();
     if (name === "profile") renderProfile();
@@ -667,6 +669,228 @@
     if (puzzle) startPuzzle(puzzle);
   }
 
+  // ——— Custom practice (free position editor, no stakes) ———
+  const CUSTOM_GLYPHS = {
+    wk: "♔", wq: "♕", wr: "♖", wb: "♗", wn: "♘", wp: "♙",
+    bk: "♚", bq: "♛", br: "♜", bb: "♝", bn: "♞", bp: "♟"
+  };
+  const CUSTOM_PALETTE = ["wk", "wq", "wr", "wb", "wn", "wp", "bk", "bq", "br", "bb", "bn", "bp"];
+  let customState = null;
+  let customWired = false;
+
+  function emptyBoard() {
+    return Array.from({ length: 8 }, () => Array(8).fill(null));
+  }
+
+  function standardBoard() {
+    return E.initialState().board.map(row => row.slice());
+  }
+
+  function ensureCustomState() {
+    if (customState) return;
+    customState = {
+      board: standardBoard(),
+      turn: "w",
+      playerColor: "w",
+      botId: Bots.BOTS[0]?.id || "pawn_rookie",
+      brush: "wq"
+    };
+  }
+
+  function setupCustom() {
+    if (customWired) return;
+    customWired = true;
+
+    const botSelect = document.getElementById("customBotSelect");
+    if (botSelect) {
+      botSelect.innerHTML = Bots.BOTS
+        .map(b => `<option value="${b.id}">${escapeHtml(b.name)} — ${escapeHtml(b.tier)} (Difficulty ${b.difficulty}/7)</option>`)
+        .join("");
+      botSelect.addEventListener("change", () => {
+        ensureCustomState();
+        customState.botId = botSelect.value;
+        updateCustomBotDesc();
+      });
+    }
+
+    document.getElementById("customTurnSelect")?.addEventListener("change", e => {
+      ensureCustomState();
+      customState.turn = e.target.value === "b" ? "b" : "w";
+    });
+    document.getElementById("customColorSelect")?.addEventListener("change", e => {
+      ensureCustomState();
+      customState.playerColor = e.target.value === "b" ? "b" : "w";
+    });
+    document.getElementById("customResetBtn")?.addEventListener("click", () => {
+      ensureCustomState();
+      customState.board = standardBoard();
+      clearCustomError();
+      renderCustomBoard();
+    });
+    document.getElementById("customClearBtn")?.addEventListener("click", () => {
+      ensureCustomState();
+      customState.board = emptyBoard();
+      clearCustomError();
+      renderCustomBoard();
+    });
+    document.getElementById("customStartBtn")?.addEventListener("click", startCustomMatch);
+  }
+
+  function renderCustom() {
+    ensureCustomState();
+    setupCustom();
+
+    const turnSel = document.getElementById("customTurnSelect");
+    const colorSel = document.getElementById("customColorSelect");
+    const botSel = document.getElementById("customBotSelect");
+    if (turnSel) turnSel.value = customState.turn;
+    if (colorSel) colorSel.value = customState.playerColor;
+    if (botSel) botSel.value = customState.botId;
+
+    clearCustomError();
+    renderCustomPalette();
+    renderCustomBoard();
+    updateCustomBotDesc();
+  }
+
+  function renderCustomPalette() {
+    const el = document.getElementById("customPalette");
+    if (!el) return;
+    const cells = CUSTOM_PALETTE.map(code => {
+      const color = code[0] === "w" ? "palette-white" : "palette-black";
+      const active = customState.brush === code ? "active" : "";
+      return `<button type="button" class="palette-piece ${color} ${active}" data-brush="${code}" title="${code}">${CUSTOM_GLYPHS[code]}</button>`;
+    });
+    // Eraser sits at the end of the first (white) row.
+    cells.splice(6, 0, `<button type="button" class="palette-piece palette-erase ${customState.brush === "erase" ? "active" : ""}" data-brush="erase">Erase</button>`);
+    el.innerHTML = cells.join("");
+
+    el.querySelectorAll("[data-brush]").forEach(btn => {
+      btn.addEventListener("click", () => {
+        customState.brush = btn.dataset.brush;
+        renderCustomPalette();
+      });
+    });
+  }
+
+  function renderCustomBoard() {
+    const el = document.getElementById("customBoard");
+    if (!el) return;
+    el.innerHTML = "";
+    for (let r = 0; r < 8; r++) {
+      for (let c = 0; c < 8; c++) {
+        const cell = document.createElement("button");
+        cell.type = "button";
+        cell.className = `custom-cell ${(r + c) % 2 === 0 ? "light" : "dark"}`;
+        cell.setAttribute("aria-label", E.squareName(r, c));
+        const piece = customState.board[r][c];
+        if (piece) {
+          const colorClass = piece[0] === "w" ? "cp-white" : "cp-black";
+          cell.innerHTML = `<span class="${colorClass}">${CUSTOM_GLYPHS[piece]}</span>`;
+        }
+        cell.addEventListener("click", () => {
+          customState.board[r][c] = customState.brush === "erase" ? null : customState.brush;
+          clearCustomError();
+          renderCustomBoard();
+        });
+        el.appendChild(cell);
+      }
+    }
+  }
+
+  function updateCustomBotDesc() {
+    const el = document.getElementById("customBotDesc");
+    if (!el) return;
+    const bot = Bots.getBot(customState.botId);
+    el.textContent = bot ? `${bot.personality}` : "";
+  }
+
+  function setCustomError(msg) {
+    const el = document.getElementById("customError");
+    if (el) el.textContent = msg;
+  }
+
+  function clearCustomError() {
+    setCustomError("");
+  }
+
+  function countPieces(board, code) {
+    let n = 0;
+    for (let r = 0; r < 8; r++) {
+      for (let c = 0; c < 8; c++) {
+        if (board[r][c] === code) n += 1;
+      }
+    }
+    return n;
+  }
+
+  function validateCustomBoard(board, turn) {
+    if (countPieces(board, "wk") !== 1) return "Add exactly one white king.";
+    if (countPieces(board, "bk") !== 1) return "Add exactly one black king.";
+    for (let c = 0; c < 8; c++) {
+      if (board[0][c] && E.typeOf(board[0][c]) === "p") return "Pawns can't sit on the last rank.";
+      if (board[7][c] && E.typeOf(board[7][c]) === "p") return "Pawns can't sit on the first rank.";
+    }
+    // The side that is NOT to move cannot already be in check.
+    const probe = customToState(board, turn);
+    if (E.isKingInCheck(probe, E.opposite(turn))) {
+      return "Illegal position: the side not to move is in check.";
+    }
+    return null;
+  }
+
+  function customToState(board, turn) {
+    return {
+      board: board.map(row => row.slice()),
+      turn,
+      castling: {
+        wK: board[7][4] === "wk" && board[7][7] === "wr",
+        wQ: board[7][4] === "wk" && board[7][0] === "wr",
+        bK: board[0][4] === "bk" && board[0][7] === "br",
+        bQ: board[0][4] === "bk" && board[0][0] === "br"
+      },
+      ep: null,
+      halfmove: 0,
+      fullmove: 1,
+      history: [],
+      lastMove: null
+    };
+  }
+
+  function startCustomMatch() {
+    ensureCustomState();
+    const error = validateCustomBoard(customState.board, customState.turn);
+    if (error) {
+      setCustomError(error);
+      return;
+    }
+
+    const baseBot = Bots.getBot(customState.botId) || Bots.BOTS[0];
+    const bot = {
+      id: `custom_${baseBot.id}`,
+      name: baseBot.name,
+      tier: baseBot.tier,
+      rewardCoins: 0,
+      ai: baseBot.ai
+    };
+    const fen = E.toFen(customToState(customState.board, customState.turn));
+
+    showScreen("play");
+    window.ChessGame.startGame({
+      mode: "bot",
+      training: true,
+      bot,
+      startFen: fen,
+      playerColor: customState.playerColor,
+      profile: activeProfile,
+      entryFeePaid: 0,
+      startingPlayerMaterial: 3900,
+      onBack: () => { showScreen("custom"); return true; },
+      onRestart: () => startCustomMatch(),
+      onMatchEnd: summary => showTrainingResult({ kind: "custom", bot: baseBot, summary })
+    });
+  }
+
   function showTrainingResult(data) {
     const modal = document.getElementById("trainingResultModal");
     const kicker = document.getElementById("trainingResultKicker");
@@ -679,8 +903,28 @@
 
     const r = data.summary?.result || "draw";
     const lines = [];
+    const exitTarget = data.kind === "custom" ? "custom" : "training";
 
-    if (data.kind === "puzzle") {
+    if (data.kind === "custom") {
+      const bot = data.bot;
+      kicker.textContent = `Custom practice · ${bot.tier}`;
+      if (r === "win") {
+        title.textContent = `You beat ${bot.name}`;
+        lines.push(`<p class="result-tag">Custom position converted in ${data.summary.moves} moves. No stakes — pure practice.</p>`);
+      } else if (r === "loss") {
+        title.textContent = `${bot.name} got you`;
+        lines.push(`<p class="result-tip">No rating lost. Tweak the position and run it back.</p>`);
+      } else {
+        title.textContent = `Draw vs ${bot.name}`;
+        lines.push(`<p class="result-tip">Even ending. Adjust the setup and try again.</p>`);
+      }
+
+      againBtn.textContent = "Play again";
+      againBtn.onclick = () => { modal.classList.add("hidden"); startCustomMatch(); };
+      newBtn.classList.remove("hidden");
+      newBtn.textContent = "Edit position";
+      newBtn.onclick = () => { modal.classList.add("hidden"); showScreen("custom"); };
+    } else if (data.kind === "puzzle") {
       const puzzle = data.puzzle;
       kicker.textContent = `Puzzle · ${puzzle.theme}`;
       if (r === "win") {
@@ -720,7 +964,7 @@
     }
 
     body.innerHTML = lines.join("");
-    exitBtn.onclick = () => { modal.classList.add("hidden"); showScreen("training"); };
+    exitBtn.onclick = () => { modal.classList.add("hidden"); showScreen(exitTarget); };
     modal.classList.remove("hidden");
   }
 
@@ -1211,6 +1455,7 @@
     setupSettings();
     setupShopTabs();
     setupTraining();
+    setupCustom();
 
     document.querySelectorAll("[data-back]").forEach(btn => {
       btn.addEventListener("click", () => showScreen(btn.dataset.back || "menu"));
