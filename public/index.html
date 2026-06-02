@@ -1,0 +1,489 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Chess LAN & Ladder</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div class="noise"></div>
+  <div id="toast" class="toast hidden" role="status"></div>
+
+  <div class="app-frame">
+    <header class="hud" id="appHud">
+      <div class="hud-left">
+        <span id="hudUsername">Player</span>
+        <span class="hud-title" id="hudTitle">New Challenger</span>
+        <span id="hudLevel">Lv 1</span>
+      </div>
+      <div class="hud-xp">
+        <div class="xp-bar-track"><div class="xp-bar-fill" id="hudXpBar"></div></div>
+        <span id="hudXpText">0 / 150 XP</span>
+      </div>
+      <div class="hud-elo">
+        <span class="elo-pill" id="hudElo">100</span>
+        <span class="elo-tier" id="hudEloTier">Novice</span>
+      </div>
+      <div class="hud-currency">
+        <span class="coin-pill" title="Coins">🪙 <strong id="hudCoins">0</strong></span>
+        <span class="token-pill" title="Royal Tokens">👑 <strong id="hudTokens">0</strong></span>
+      </div>
+    </header>
+
+    <!-- Auth -->
+    <section id="screen-auth" class="screen panel-screen">
+      <h1>Chess</h1>
+      <p class="lead">Create or log into a local profile.</p>
+      <form id="authForm" class="stack-form">
+        <label class="field">
+          <span>Username</span>
+          <input type="text" id="authUsername" required minlength="2" maxlength="24" autocomplete="username" />
+        </label>
+        <label class="field">
+          <span>Passcode</span>
+          <input type="password" id="authPasscode" required minlength="4" autocomplete="current-password" />
+        </label>
+        <label class="field" id="authConfirmWrap">
+          <span>Confirm passcode</span>
+          <input type="password" id="authPasscodeConfirm" minlength="4" autocomplete="new-password" />
+        </label>
+        <p id="authError" class="form-error"></p>
+        <button type="submit" id="authSubmitBtn">Create Profile</button>
+        <button type="button" id="authToggleMode" class="linkish">Already have a profile? Log in</button>
+      </form>
+    </section>
+
+    <!-- Main menu (home) -->
+    <section id="screen-menu" class="screen home-screen hidden">
+      <header class="home-hero">
+        <p class="eyebrow">Welcome back</p>
+        <h2 class="home-greeting" id="homeGreeting">Player</h2>
+        <p class="home-subtitle" id="homeSubtitle">New Challenger · Novice</p>
+      </header>
+
+      <div class="home-stats" id="homeStats">
+        <div class="stat-tile stat-elo">
+          <span class="stat-label">Rating (ELO)</span>
+          <strong class="stat-value" id="homeElo">100</strong>
+          <span class="stat-meta" id="homeEloMeta">Peak 100</span>
+        </div>
+        <div class="stat-tile stat-level">
+          <span class="stat-label">Player level</span>
+          <strong class="stat-value" id="homeLevel">1</strong>
+          <span class="stat-meta" id="homeXpMeta">0 / 150 XP</span>
+        </div>
+        <div class="stat-tile stat-coins">
+          <span class="stat-label">Coins</span>
+          <strong class="stat-value" id="homeCoins">0</strong>
+          <span class="stat-meta">Victory rewards</span>
+        </div>
+        <div class="stat-tile stat-streak">
+          <span class="stat-label">Win streak</span>
+          <strong class="stat-value" id="homeStreak">0</strong>
+          <span class="stat-meta" id="homeStreakMeta">Best: 0</span>
+        </div>
+      </div>
+
+      <section class="home-progress" aria-labelledby="progressHeading">
+        <div class="home-progress-head">
+          <h3 id="progressHeading">Your progress</h3>
+          <span class="progress-overall" id="homeOverallPct">0% ladder</span>
+        </div>
+
+        <div class="progress-block">
+          <div class="progress-row">
+            <span class="progress-label">Bot ladder</span>
+            <span class="progress-count" id="homeLadderCount">0 / 7 defeated</span>
+          </div>
+          <div class="progress-track">
+            <div class="progress-fill progress-fill-ladder" id="homeLadderBar"></div>
+          </div>
+          <ol class="ladder-steps" id="homeLadderSteps" aria-label="Bot ladder progress"></ol>
+          <p class="progress-next" id="homeNextBot">Next goal: defeat Pawn Rookie</p>
+        </div>
+
+        <div class="progress-block">
+          <div class="progress-row">
+            <span class="progress-label">Achievements</span>
+            <span class="progress-count" id="homeAchCount">0 / 10</span>
+          </div>
+          <div class="progress-track">
+            <div class="progress-fill progress-fill-ach" id="homeAchBar"></div>
+          </div>
+        </div>
+
+        <div class="progress-block">
+          <div class="progress-row">
+            <span class="progress-label">Level XP</span>
+            <span class="progress-count" id="homeLevelCount">Level 1</span>
+          </div>
+          <div class="progress-track">
+            <div class="progress-fill progress-fill-xp" id="homeXpBar"></div>
+          </div>
+        </div>
+
+        <div class="progress-block">
+          <div class="progress-row">
+            <span class="progress-label">ELO rank</span>
+            <span class="progress-count" id="homeEloRank">Novice</span>
+          </div>
+          <div class="progress-track">
+            <div class="progress-fill progress-fill-elo" id="homeEloBar"></div>
+          </div>
+        </div>
+      </section>
+
+      <nav class="home-nav" aria-label="Main navigation">
+        <button type="button" class="nav-card nav-primary" data-nav="play-bot">
+          <span class="nav-card-kicker">Ranked practice</span>
+          <span class="nav-card-title">Bot ladder</span>
+          <span class="nav-card-desc">Seven opponents · entry fees · ELO &amp; loot</span>
+        </button>
+        <button type="button" class="nav-card" data-nav="training">
+          <span class="nav-card-kicker">Practice · no stakes</span>
+          <span class="nav-card-title">Training &amp; puzzles</span>
+          <span class="nav-card-desc">Sparring bots, a move coach, and random puzzles</span>
+        </button>
+        <button type="button" class="nav-card" data-nav="lan">
+          <span class="nav-card-kicker">Multiplayer</span>
+          <span class="nav-card-title">Local &amp; LAN</span>
+          <span class="nav-card-desc">Pass-and-play or share your network URL</span>
+        </button>
+        <div class="home-nav-row">
+          <button type="button" class="nav-card nav-compact" data-nav="shop">
+            <span class="nav-card-title">Shop</span>
+            <span class="nav-card-desc">Boards &amp; pieces</span>
+          </button>
+          <button type="button" class="nav-card nav-compact" data-nav="locker">
+            <span class="nav-card-title">Locker</span>
+            <span class="nav-card-desc">Equip cosmetics</span>
+          </button>
+        </div>
+        <div class="home-nav-row">
+          <button type="button" class="nav-card nav-compact" data-nav="profile">
+            <span class="nav-card-title">Profile</span>
+            <span class="nav-card-desc">Stats &amp; history</span>
+          </button>
+          <button type="button" class="nav-card nav-compact" data-nav="achievements">
+            <span class="nav-card-title">Achievements</span>
+            <span class="nav-card-desc">One-time rewards</span>
+          </button>
+        </div>
+        <button type="button" class="nav-card" data-nav="leaderboard">
+          <span class="nav-card-kicker">Compete</span>
+          <span class="nav-card-title">Leaderboard</span>
+          <span class="nav-card-desc">Top players ranked by ELO on this server</span>
+        </button>
+        <button type="button" class="nav-card nav-muted" data-nav="settings">
+          <span class="nav-card-title">Settings</span>
+          <span class="nav-card-desc">Board hints, bot delay, passcode</span>
+        </button>
+      </nav>
+
+      <div class="server-card home-server">
+        <strong>LAN server</strong>
+        <p id="serverUrls">Loading connection info…</p>
+      </div>
+    </section>
+
+    <!-- Leaderboard -->
+    <section id="screen-leaderboard" class="screen panel-screen hidden">
+      <div class="screen-head">
+        <button type="button" class="secondary" data-back="menu">← Menu</button>
+        <h2>Leaderboard</h2>
+      </div>
+      <p class="lead">Top players ranked by current ELO across this server.</p>
+      <div id="leaderboardList" class="leaderboard"></div>
+    </section>
+
+    <!-- Bot ladder -->
+    <section id="screen-bot-ladder" class="screen panel-screen hidden">
+      <div class="screen-head">
+        <button type="button" class="secondary" data-back="menu">← Menu</button>
+        <h2>Bot Ladder</h2>
+      </div>
+      <p class="lead">Challenge bots for coins, XP, and unlocks. Entry fees apply on higher tiers.</p>
+      <div id="botLadderList" class="bot-ladder"></div>
+    </section>
+
+    <!-- Training -->
+    <section id="screen-training" class="screen panel-screen hidden">
+      <div class="screen-head">
+        <button type="button" class="secondary" data-back="menu">← Menu</button>
+        <h2>Training</h2>
+      </div>
+      <p class="lead">Practice freely against calibrated sparring bots or solve random puzzles. A coach can suggest the best move whenever you get stuck. Nothing here affects your ELO, XP, or coins.</p>
+
+      <div class="training-tabs" role="tablist">
+        <button type="button" class="training-tab active" data-train-tab="bots">Sparring bots</button>
+        <button type="button" class="training-tab" data-train-tab="puzzles">Puzzles</button>
+      </div>
+
+      <div id="trainBotsPanel" class="training-panel">
+        <label class="field inline-field train-color">
+          <span>Play as</span>
+          <select id="trainColorSelect">
+            <option value="w">White</option>
+            <option value="b">Black</option>
+            <option value="random">Random</option>
+          </select>
+        </label>
+        <div id="trainingBotList" class="bot-ladder"></div>
+      </div>
+
+      <div id="trainPuzzlesPanel" class="training-panel hidden">
+        <div class="puzzle-intro">
+          <p>Each puzzle drops you into a winning position. Convert it against an ELO bot — use the coach if you get stuck.</p>
+          <button type="button" id="startPuzzleBtn">🎲 Random puzzle</button>
+        </div>
+        <div id="puzzleList" class="training-puzzle-grid"></div>
+      </div>
+    </section>
+
+    <!-- LAN -->
+    <section id="screen-lan" class="screen panel-screen hidden">
+      <div class="screen-head">
+        <button type="button" class="secondary" data-back="menu">← Menu</button>
+        <h2>Local / LAN</h2>
+      </div>
+      <p class="lead">Human vs human on one device. Share a LAN URL for others on your network.</p>
+      <div class="server-card"><p id="serverUrlsLan"></p></div>
+      <button type="button" id="startLanBtn">Start Local Match</button>
+    </section>
+
+    <!-- Shop -->
+    <section id="screen-shop" class="screen shop-screen hidden">
+      <div class="screen-head">
+        <button type="button" class="secondary" data-back="menu">← Menu</button>
+        <h2>Theme shop</h2>
+      </div>
+      <p class="lead">Board patterns, color themes, and piece sets. Buy with coins or Royal Tokens, then equip instantly.</p>
+      <div class="shop-summary" id="shopSummary"></div>
+      <div class="shop-tabs" role="tablist">
+        <button type="button" class="shop-tab active" data-shop-tab="boards">Board themes</button>
+        <button type="button" class="shop-tab" data-shop-tab="pieces">Piece sets</button>
+      </div>
+      <div id="shopBoardsPanel" class="shop-panel">
+        <div id="shopBoards" class="shop-grid"></div>
+      </div>
+      <div id="shopPiecesPanel" class="shop-panel hidden">
+        <div id="shopPieces" class="shop-grid"></div>
+      </div>
+    </section>
+
+    <!-- Locker -->
+    <section id="screen-locker" class="screen panel-screen hidden">
+      <div class="screen-head">
+        <button type="button" class="secondary" data-back="menu">← Menu</button>
+        <h2>Locker</h2>
+      </div>
+      <h3>Boards</h3>
+      <div id="lockerBoards" class="locker-grid"></div>
+      <h3>Pieces</h3>
+      <div id="lockerPieces" class="locker-grid"></div>
+      <h3>Titles</h3>
+      <div id="lockerTitles" class="locker-grid"></div>
+    </section>
+
+    <!-- Profile -->
+    <section id="screen-profile" class="screen panel-screen hidden">
+      <div class="screen-head">
+        <button type="button" class="secondary" data-back="menu">← Menu</button>
+        <h2>Profile</h2>
+      </div>
+      <div id="profileDetails" class="profile-box"></div>
+      <h3>Recent matches</h3>
+      <ul id="profileHistory" class="history-list"></ul>
+      <div class="button-row profile-actions">
+        <button type="button" id="changePassBtn" class="secondary">Change passcode</button>
+        <button type="button" id="exportSaveBtn" class="secondary">Export save</button>
+        <button type="button" id="importSaveBtn" class="secondary">Import save</button>
+        <button type="button" id="switchProfileBtn" class="secondary">Switch profile</button>
+        <button type="button" id="deleteProfileBtn" class="danger">Delete profile</button>
+      </div>
+    </section>
+
+    <!-- Achievements -->
+    <section id="screen-achievements" class="screen panel-screen hidden">
+      <div class="screen-head">
+        <button type="button" class="secondary" data-back="menu">← Menu</button>
+        <h2>Achievements</h2>
+      </div>
+      <div id="achievementsList" class="achievements-grid"></div>
+    </section>
+
+    <!-- Settings -->
+    <section id="screen-settings" class="screen panel-screen hidden">
+      <div class="screen-head">
+        <button type="button" class="secondary" data-back="menu">← Menu</button>
+        <h2>Settings</h2>
+      </div>
+      <label class="field">
+        <span>Bot thinking delay (ms)</span>
+        <input type="number" id="settingBotDelay" min="0" max="2000" step="50" />
+      </label>
+      <label class="field check-field">
+        <input type="checkbox" id="settingCoords" /> Show board coordinates
+      </label>
+      <label class="field check-field">
+        <input type="checkbox" id="settingHints" /> Legal move hints
+      </label>
+      <label class="field check-field">
+        <input type="checkbox" id="settingAutoQueen" /> Auto-queen on promotion
+      </label>
+      <button type="button" id="saveSettingsBtn">Save settings</button>
+      <button type="button" id="resetProgressBtn" class="danger">Reset profile progress</button>
+    </section>
+
+    <!-- Play (chess board) -->
+    <section id="screen-play" class="screen play-screen hidden">
+      <div class="play-toolbar">
+        <button type="button" id="backFromPlayBtn" class="secondary">← Exit</button>
+        <label class="field inline-field" id="playColorField">
+          <span>Your color</span>
+          <select id="playColorSelect">
+            <option value="w">White</option>
+            <option value="b">Black</option>
+          </select>
+        </label>
+        <p id="matchMeta" class="match-meta"></p>
+      </div>
+
+      <div class="play-area">
+        <aside class="panel controls-panel">
+          <div class="button-row">
+            <button type="button" id="newGameBtn">Restart</button>
+            <button type="button" id="flipBtn" class="secondary">Flip</button>
+          </div>
+          <button type="button" id="hintBtn" class="coach-btn hidden">💡 Ask the coach</button>
+          <p id="hintText" class="hint-text hidden"></p>
+          <button type="button" id="resignBtn" class="danger">Resign</button>
+          <div class="status-card">
+            <span class="status-label">Status</span>
+            <p id="statusText">White to move.</p>
+          </div>
+          <div id="thinkingBox" class="thinking hidden">
+            <span class="spinner"></span>
+            <span id="thinkingText">Thinking…</span>
+          </div>
+        </aside>
+
+        <div class="board-column">
+          <div class="player-bar player-top">
+            <span class="player-name" id="topName">Black</span>
+            <span class="player-meta" id="topMeta">Bot</span>
+            <span class="material-pill" id="topMaterial"></span>
+          </div>
+          <div class="board-frame">
+            <div class="rank-labels" id="rankLabels"></div>
+            <div class="board-center">
+              <div class="file-labels file-top" id="fileLabelsTop"></div>
+              <div class="board-shell">
+                <div id="board" class="board" role="grid"></div>
+              </div>
+              <div class="file-labels file-bottom" id="fileLabelsBottom"></div>
+            </div>
+          </div>
+          <div class="player-bar player-bottom">
+            <span class="player-name" id="bottomName">White</span>
+            <span class="player-meta" id="bottomMeta">You</span>
+            <span class="material-pill" id="bottomMaterial"></span>
+          </div>
+        </div>
+
+        <aside class="panel info-panel">
+          <div class="advantage-card">
+            <span class="mini-label">Material</span>
+            <p id="advantageText" class="advantage-text even">Even</p>
+          </div>
+          <div class="score-grid">
+            <div>
+              <span class="mini-label">White captured</span>
+              <div id="whiteCaptured" class="captured">—</div>
+            </div>
+            <div>
+              <span class="mini-label">Black captured</span>
+              <div id="blackCaptured" class="captured">—</div>
+            </div>
+          </div>
+          <div class="move-box">
+            <div class="move-box-title">
+              <span>Moves</span>
+              <button type="button" id="copyPgnBtn" class="tiny">Copy</button>
+            </div>
+            <ol id="moveHistory"></ol>
+          </div>
+        </aside>
+      </div>
+    </section>
+  </div>
+
+  <div id="promotionModal" class="modal hidden" role="dialog" aria-modal="true">
+    <div class="modal-card small-modal">
+      <h2>Promotion</h2>
+      <div class="promotion-options">
+        <button type="button" data-piece="q">♕ Queen</button>
+        <button type="button" data-piece="r">♖ Rook</button>
+        <button type="button" data-piece="b">♗ Bishop</button>
+        <button type="button" data-piece="n">♘ Knight</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="gameOverOverlay" class="modal hidden">
+    <div class="modal-card end-card">
+      <p id="endKicker" class="eyebrow">Game over</p>
+      <h2 id="endTitle">CHECKMATE</h2>
+      <p id="endSubtitle"></p>
+    </div>
+  </div>
+
+  <div id="confirmEntryModal" class="modal hidden">
+    <div class="modal-card small-modal">
+      <h2>Confirm challenge</h2>
+      <p id="confirmEntryText"></p>
+      <div class="button-row">
+        <button type="button" id="confirmEntryYes">Pay &amp; play</button>
+        <button type="button" id="confirmEntryNo" class="secondary">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="resultModal" class="modal hidden">
+    <div class="modal-card">
+      <h2 id="resultTitle">Match result</h2>
+      <div id="resultBody" class="result-body"></div>
+      <div class="button-row result-actions">
+        <button type="button" id="resultPlayAgain">Play again</button>
+        <button type="button" id="resultToLadder" class="secondary">Bot ladder</button>
+        <button type="button" id="resultToLocker" class="secondary">Locker</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="trainingResultModal" class="modal hidden">
+    <div class="modal-card">
+      <p id="trainingResultKicker" class="eyebrow">Training</p>
+      <h2 id="trainingResultTitle">Result</h2>
+      <div id="trainingResultBody" class="result-body"></div>
+      <div class="button-row result-actions">
+        <button type="button" id="trainAgainBtn">Play again</button>
+        <button type="button" id="trainNewBtn" class="secondary">New puzzle</button>
+        <button type="button" id="trainExitBtn" class="secondary">Exit</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="chess-engine.js"></script>
+  <script src="js/storage.js"></script>
+  <script src="js/cosmetics.js"></script>
+  <script src="js/bot-configs.js"></script>
+  <script src="js/training-data.js"></script>
+  <script src="js/achievements.js"></script>
+  <script src="js/elo.js"></script>
+  <script src="js/economy.js"></script>
+  <script src="game.js"></script>
+  <script src="main.js"></script>
+</body>
+</html>

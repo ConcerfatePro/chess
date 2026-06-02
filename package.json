@@ -1,0 +1,15 @@
+{
+  "name": "cream-chess-lan-bot",
+  "version": "3.0.0",
+  "description": "Chess LAN app with progression: profiles, bot ladder, shop, locker, achievements.",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "better-sqlite3": "^11.10.0"
+  },
+  "keywords": ["chess", "bot", "lan", "browser", "retro"],
+  "author": "",
+  "license": "MIT"
+}
