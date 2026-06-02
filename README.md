@@ -1,8 +1,6 @@
 # Chess
 
-Play chess in your browser against a ladder of bots, or share a link with
-someone on your wifi and play against them. You earn coins as you play and can
-spend them on cosmetics.
+Play chess in your browser against a ladder of bots, or with someone on your network. 
 
 ## Run it
 
